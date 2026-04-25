@@ -27,29 +27,35 @@ export function Footer() {
   const [viewers, setViewers] = useState<number | null>(null);
 
   useEffect(() => {
-    // Simulated viewer count logic using localStorage for persistence
-    const currentViewers = localStorage.getItem("totalViewers");
-    if (currentViewers) {
-      const parsedViewers = parseInt(currentViewers, 10);
-      const isNewSession = !sessionStorage.getItem("visited");
-
-      if (isNewSession) {
-        // Add random views simulating other users visiting between sessions
-        const randomIncrement = Math.floor(Math.random() * 15) + 1;
-        const newCount = parsedViewers + randomIncrement;
-        localStorage.setItem("totalViewers", newCount.toString());
-        sessionStorage.setItem("visited", "true");
-        setViewers(newCount);
-      } else {
-        setViewers(parsedViewers);
+    const fetchViews = async () => {
+      try {
+        const isNewSession = !sessionStorage.getItem("visited");
+        const endpoint = isNewSession
+          ? "https://abacus.jasoncameron.dev/hit/omkarmodak/portfolio"
+          : "https://abacus.jasoncameron.dev/get/omkarmodak/portfolio";
+          
+        const response = await fetch(endpoint);
+        const data = await response.json();
+        
+        if (data && typeof data.value === 'number') {
+          setViewers(data.value);
+          localStorage.setItem("totalViewers", data.value.toString());
+          if (isNewSession) {
+            sessionStorage.setItem("visited", "true");
+          }
+        }
+      } catch (error) {
+        // Fallback to local storage if API is blocked or fails
+        const localViews = localStorage.getItem("totalViewers");
+        if (localViews) {
+          setViewers(parseInt(localViews, 10));
+        } else {
+          setViewers(1);
+        }
       }
-    } else {
-      // Start with a realistic baseline of views (between 1500 and 3500)
-      const startingValue = 0 + Math.floor(Math.random() * 2000);
-      localStorage.setItem("totalViewers", startingValue.toString());
-      sessionStorage.setItem("visited", "true");
-      setViewers(startingValue);
-    }
+    };
+
+    fetchViews();
   }, []);
 
   const scrollToSection = (href: string) => {
